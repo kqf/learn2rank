@@ -7,6 +7,7 @@ from sklearn.preprocessing import StandardScaler  # noqa
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.dummy import DummyClassifier
+from lightgbm import LGBMClassifier
 
 
 class PandasSelector(BaseEstimator, TransformerMixin):
@@ -50,6 +51,19 @@ class MeanEncoder(BaseEstimator, TransformerMixin):
         return X[self.cols].map(self.means).values.reshape(-1, 1)
 
 
+class FrequencyEncoder(BaseEstimator, TransformerMixin):
+    def __init__(self, cols):
+        self.cols = cols
+
+    def fit(self, X, y):
+        X = X.assign(target=y)
+        self.frequency = X.groupby(self.cols).size()
+        return self
+
+    def transform(self, X):
+        return X[self.cols].map(self.frequency).values.reshape(-1, 1)
+
+
 def categorical(colname):
     return make_pipeline(
         PandasSelector(colname, records=True),
@@ -62,22 +76,26 @@ def build_model():
     # n10 is empty, the rest are the listing features
     exclude = {0, 1, 2, 10, 18, 32, 34}
     listing_features = make_union(
-        MeanEncoder(cols="c0"),
-        MeanEncoder(cols="c1"),
-        MeanEncoder(cols="c2"),
+        # MeanEncoder(cols="c0"),
+        # MeanEncoder(cols="c1"),
+        # MeanEncoder(cols="c2"),
+        FrequencyEncoder(cols="c0"),
+        FrequencyEncoder(cols="c1"),
+        FrequencyEncoder(cols="c2"),
         make_pipeline(
             PandasSelector(["n{}".format(i)
                             for i in range(0, 45) if i not in exclude]),
-            StandardScaler(),
+            # StandardScaler(),
         ),
     )
 
     document_features = make_union(
-        MeanEncoder(cols="c3"),
-        MeanEncoder(cols="c4"),
+        # categorical(colname=["c3", "c4"]),
+        FrequencyEncoder(cols="c3"),
+        FrequencyEncoder(cols="c4"),
         make_pipeline(
             PandasSelector(["n0", "n1", "n2", "n18", "n32", "n34"]),
-            StandardScaler(),
+            # StandardScaler(),
         )
     )
     model = make_pipeline(
@@ -86,7 +104,7 @@ def build_model():
             document_features,
         ),
         ReporteShape("Before doing the classification"),
-        LogisticRegression(),
+        LGBMClassifier(learning_rate=0.15),
     )
     # model = DummyClassifier()
     return model

@@ -3,3 +3,5 @@ jupyter
 pandas
 pytest
 click
+scikit-learn
+lightgbm
