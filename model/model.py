@@ -4,10 +4,8 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import StandardScaler  # noqa
-from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import GradientBoostingClassifier
-from sklearn.dummy import DummyClassifier
-from lightgbm import LGBMClassifier
+from sklearn.linear_model import LogisticRegression  # noqa
+from lightgbm import LGBMRanker, LGBMClassifier
 
 
 class PandasSelector(BaseEstimator, TransformerMixin):
@@ -32,9 +30,7 @@ class ReporteShape(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X):
-        print(self.msg)
-        print(X.shape)
-        # print(X[:5])
+        print(self.msg, X.shape)
         return X
 
 
@@ -72,13 +68,10 @@ def categorical(colname):
     )
 
 
-def build_model():
+def data_pipeline():
     # n10 is empty, the rest are the listing features
     exclude = {0, 1, 2, 10, 18, 32, 34}
     listing_features = make_union(
-        # MeanEncoder(cols="c0"),
-        # MeanEncoder(cols="c1"),
-        # MeanEncoder(cols="c2"),
         FrequencyEncoder(cols="c0"),
         FrequencyEncoder(cols="c1"),
         FrequencyEncoder(cols="c2"),
@@ -91,8 +84,8 @@ def build_model():
 
     document_features = make_union(
         # categorical(colname=["c3", "c4"]),
-        FrequencyEncoder(cols="c3"),
-        FrequencyEncoder(cols="c4"),
+        MeanEncoder(cols="c3"),
+        MeanEncoder(cols="c4"),
         make_pipeline(
             PandasSelector(["n0", "n1", "n2", "n18", "n32", "n34"]),
             # StandardScaler(),
@@ -103,8 +96,22 @@ def build_model():
             listing_features,
             document_features,
         ),
-        ReporteShape("Before doing the classification"),
-        LGBMClassifier(learning_rate=0.15),
+        ReporteShape("The total shape"),
     )
-    # model = DummyClassifier()
+    return model
+
+
+def build_pointwise_model():
+    model = make_pipeline(
+        data_pipeline(),
+        LGBMClassifier(n_estimators=200),
+    )
+    return model
+
+
+def build_pairwise_model():
+    model = make_pipeline(
+        data_pipeline(),
+        LGBMRanker(n_estimators=200),
+    )
     return model

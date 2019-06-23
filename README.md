@@ -8,8 +8,8 @@ pip install -r requirements.txt
 pip install .
 ```
 
-## Run the solution
-To run the solution do
+## Run the experiments 
+To run the experiments do
 ```bash
 
 # Download the dataset *.csv into ./data folder 

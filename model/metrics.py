@@ -20,7 +20,7 @@ def memoized_ndcg_score(ranking, position=None):
 
 
 def ndcg_scores(df, query_id="listing_id", relevance="clicked"):
-    return df.groupby(query_id)[relevance].agg(memoized_ndcg_score).values
+    return df.groupby(query_id)[relevance].agg(memoized_ndcg_score)
 
 
 def mean_ndcg_score(df, query_id="listing_id", relevance="clicked"):
